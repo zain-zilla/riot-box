@@ -2,7 +2,7 @@
 
 **A polyphonic subtractive synthesizer that runs entirely in the browser — no build step, no dependencies, real MIDI hardware support, and a lossless WAV export engine written from scratch on top of the Web Audio API.**
 
-[![Live Demo](https://img.shields.io/badge/demo-live-6ee7c2?style=for-the-badge)](https://zainluthu.github.io/web-synth/)
+[![Live Demo](https://img.shields.io/badge/demo-live-6ee7c2?style=for-the-badge)](https://zainluthu.github.io/web-synth-1/)
 &nbsp;
 ![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=flat-square&logo=html5&logoColor=white)
 ![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=flat-square&logo=css3&logoColor=white)
@@ -11,7 +11,7 @@
 ![Web MIDI API](https://img.shields.io/badge/Web%20MIDI%20API-6ee7c2?style=flat-square)
 ![No dependencies](https://img.shields.io/badge/dependencies-none-success?style=flat-square)
 
-**Repo:** [github.com/zainluthu/web-synth](https://github.com/zainluthu/web-synth) · **Live:** [zainluthu.github.io/web-synth](https://zainluthu.github.io/web-synth/)
+**Repo:** [github.com/zainluthu/web-synth-1](https://github.com/zainluthu/web-synth-1) · **Live:** [zainluthu.github.io/web-synth-1](https://zainluthu.github.io/web-synth-1/)
 
 > **Note:** the demo link won't resolve until the repo is pushed to GitHub and the included Actions workflow deploys it (see [Local Development](#-local-development--build-instructions) below). Everything else here reflects exactly what's implemented in this folder.
 
@@ -108,7 +108,7 @@ This repo includes [`.github/workflows/deploy-pages.yml`](.github/workflows/depl
 3. Push to `main` (or re-run the workflow from the **Actions** tab) — the site goes live at `https://<username>.github.io/<repo>/`.
 
 ```bash
-git remote add origin https://github.com/zainluthu/web-synth.git
+git remote add origin https://github.com/zainluthu/web-synth-1.git
 git branch -M main
 git push -u origin main
 ```

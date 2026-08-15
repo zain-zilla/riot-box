@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const GITHUB_REPO_URL = "https://github.com/zainluthu/web-synth";
+  const GITHUB_REPO_URL = "https://github.com/zainluthu/web-synth-1";
 
   // ---------- Audio engine ----------
 
