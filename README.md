@@ -13,7 +13,7 @@
 
 **Repo:** [github.com/zain-zilla/web-synth-1](https://github.com/zain-zilla/web-synth-1) · **Live:** [zain-zilla.github.io/web-synth-1](https://zain-zilla.github.io/web-synth-1/)
 
-> **Note:** the demo link won't resolve until the repo is pushed to GitHub and the included Actions workflow deploys it (see [Local Development](#-local-development--build-instructions) below). Everything else here reflects exactly what's implemented in this folder.
+<!-- Demo GIF goes here -->
 
 ---
 
@@ -101,17 +101,9 @@ To deploy, upload the three files (`index.html`, `style.css`, `synth.js`) to any
 
 ### Deploying to GitHub Pages
 
-This repo includes [`.github/workflows/deploy-pages.yml`](.github/workflows/deploy-pages.yml), which auto-deploys on every push to `main` — no build step, it just publishes the static files as-is. One-time setup after your first push:
+The live demo is deployed by [`.github/workflows/deploy-pages.yml`](.github/workflows/deploy-pages.yml): every push to `main` publishes the static files as-is, with no build step.
 
-1. Push this repo to GitHub (see commands below).
-2. In the repo, go to **Settings → Pages → Source** and select **GitHub Actions**.
-3. Push to `main` (or re-run the workflow from the **Actions** tab) — the site goes live at `https://<username>.github.io/<repo>/`.
-
-```bash
-git remote add origin https://github.com/zain-zilla/web-synth-1.git
-git branch -M main
-git push -u origin main
-```
+To host your own copy, fork the repo, then go to **Settings → Pages → Source** and select **GitHub Actions**. It goes live at `https://<username>.github.io/<repo>/`.
 
 ---
 
