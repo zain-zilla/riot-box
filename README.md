@@ -13,7 +13,7 @@
 
 **Repo:** [github.com/zain-zilla/web-synth-1](https://github.com/zain-zilla/web-synth-1) · **Live:** [zain-zilla.github.io/web-synth-1](https://zain-zilla.github.io/web-synth-1/)
 
-<!-- Demo GIF goes here -->
+![RIOT//BOX demo: waveform, spectrum and live effect visuals](riot-box-demo.gif)
 
 ---
 
