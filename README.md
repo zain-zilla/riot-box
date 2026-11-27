@@ -2,7 +2,7 @@
 
 **A polyphonic synthesizer that runs entirely in the browser: unison, LFO, drive, delay, reverb, sidechain, an arpeggiator, a step sequencer with drums, real MIDI hardware support, live visuals for every effect, and a WAV export engine written from scratch on the Web Audio API. No build step, no dependencies.**
 
-[![Live Demo](https://img.shields.io/badge/demo-live-ff2e88?style=for-the-badge)](https://zain-zilla.github.io/web-synth-1/)
+[![Live Demo](https://img.shields.io/badge/demo-live-ff2e88?style=for-the-badge)](https://zain-zilla.github.io/riot-box/)
 &nbsp;
 ![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=flat-square&logo=html5&logoColor=white)
 ![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=flat-square&logo=css3&logoColor=white)
@@ -11,7 +11,7 @@
 ![Web MIDI API](https://img.shields.io/badge/Web%20MIDI%20API-ff2e88?style=flat-square)
 ![No dependencies](https://img.shields.io/badge/dependencies-none-success?style=flat-square)
 
-**Repo:** [github.com/zain-zilla/web-synth-1](https://github.com/zain-zilla/web-synth-1) · **Live:** [zain-zilla.github.io/web-synth-1](https://zain-zilla.github.io/web-synth-1/)
+**Repo:** [github.com/zain-zilla/riot-box](https://github.com/zain-zilla/riot-box) · **Live:** [zain-zilla.github.io/riot-box](https://zain-zilla.github.io/riot-box/)
 
 ![RIOT//BOX demo: waveform, spectrum and live effect visuals](riot-box-demo.gif)
 
@@ -134,7 +134,7 @@ To host your own copy, fork the repo, then go to **Settings → Pages → Source
 ## 📁 Project Structure
 
 ```
-web-synth/
+riot-box/
 ├── index.html   # markup: presets, visualisers, modules, sequencer, keyboard, About drawer
 ├── style.css    # dark synth-panel theme
 ├── synth.js     # audio engine, effects, arp, sequencer, visuals, WAV encoder, MIDI

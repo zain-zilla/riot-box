@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const GITHUB_REPO_URL = "https://github.com/zain-zilla/web-synth-1";
+  const GITHUB_REPO_URL = "https://github.com/zain-zilla/riot-box";
   const $ = (id) => document.getElementById(id);
   const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
   const midiToFreq = (n) => 440 * Math.pow(2, (n - 69) / 12);
