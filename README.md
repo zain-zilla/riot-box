@@ -37,6 +37,13 @@
 - Live **oscilloscope** (zero-crossing triggered so the wave stands still) and a log-scale **spectrum analyser**.
 - A visual for every module: unison spread, **ADSR shape**, the filter's real **frequency-response curve** (it moves when the LFO wobbles it), animated **LFO** wave, **drive transfer curve**, **delay echo** decay, **reverb tail**, and a live **sidechain gain meter**.
 
+**VR mode (WebXR, Meta Quest)** — `xr.html`
+- Open the live site in the Quest browser and press **🥽 VR mode → Enter VR**.
+- Tap glowing pads with your **fingertips** (hand tracking) or point and pull the trigger; a pinch works too.
+- Preset buttons (Fat Bass, Pluck, Pad, Lead) and a **BEAT** button with sidechain pumping.
+- A **spectrum ring** of bars stands around you and reacts to what you play.
+- Built with three.js (vendored, still no build step) and the WebXR Device API; desktop fallback with mouse and keyboard.
+
 **Export**
 - **Lossless WAV export** — renders the pattern (or the A→D chain) through an `OfflineAudioContext` with the *same* chain, drums and sidechain as live playback, then encodes 16-bit PCM WAV by hand.
 
@@ -131,5 +138,7 @@ web-synth/
 ├── index.html   # markup: presets, visualisers, modules, sequencer, keyboard, About drawer
 ├── style.css    # dark synth-panel theme
 ├── synth.js     # audio engine, effects, arp, sequencer, visuals, WAV encoder, MIDI
+├── xr.html / xr.js  # WebXR VR mode (hands + controllers)
+├── vendor/three.module.min.js  # three.js r160 (MIT)
 └── README.md
 ```

@@ -125,6 +125,19 @@ h1::after {
   color: var(--muted);
 }
 .power { display: flex; align-items: center; gap: 12px; }
+.xr-link {
+  font-family: var(--body);
+  font-weight: 700;
+  font-size: 13px;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: #000;
+  background: var(--cyan);
+  border: 2px solid #000;
+  padding: 7px 12px;
+  box-shadow: 3px 3px 0 var(--pink);
+}
+.xr-link:hover { background: var(--lime); }
 .status { font-family: var(--mono); color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
 
 /* ---------- Buttons & inputs ---------- */
