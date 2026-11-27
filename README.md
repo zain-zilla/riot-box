@@ -38,13 +38,22 @@
 - A visual for every module: unison spread, **ADSR shape**, the filter's real **frequency-response curve** (it moves when the LFO wobbles it), animated **LFO** wave, **drive transfer curve**, **delay echo** decay, **reverb tail**, and a live **sidechain gain meter**.
 
 **VR mode (WebXR, Meta Quest)** — `xr.html`
+
+![RIOT//BOX XR on Meta Quest 3: a latched C3 drone with a melody on top](riot-box-xr.gif)
+
 - Open the live site in the Quest browser and press **🥽 VR mode → Enter VR**.
-- Tap glowing pads with your **fingertips** (hand tracking) or point and pull the trigger; a pinch works too.
+- Tap glowing pads with your **fingertips** (hand tracking) or point and pull the trigger; a pinch works too. Only fingertips count with hand tracking, so a resting palm never plays a note.
+- **8-fader mixer** above the pads: cutoff, resonance, drive, delay, reverb, octave, BPM, volume. Slide with a fingertip or point and drag. Presets set the starting sound; the faders change it live, even on notes you're holding.
+- **LATCH:** tap a pad and it keeps playing after you let go; tap again to stop. Hold a drone and play over it.
 - Preset buttons (Fat Bass, Pluck, Pad, Lead) and a **BEAT** button with sidechain pumping.
+- **Auto height:** the whole layout moves to your head height when you enter VR, so it works seated or standing. Add `?debug` to the URL to see which hand or controller holds each note.
 - A **spectrum ring** of bars stands around you and reacts to what you play.
 - Built with three.js (vendored, still no build step) and the WebXR Device API; desktop fallback with mouse and keyboard.
 
 **AIR//RIOT (WebXR, hands only)** — `gesture.html`
+
+![AIR//RIOT: playing a synth with bare hands in Meta Quest 3](air-riot.gif)
+
 - **Right hand:** pinch to play; raise or lower your hand to move through the notes (C minor pentatonic, so it always sounds musical). The note glides while you hold the pinch.
 - **Left hand:** its height sweeps the filter; pinch for a bass drone. **Hands apart** = more reverb. **Make a fist** to start or stop the beat.
 - Gestures are recognised on the headset from hand-joint geometry (pinch distance with hysteresis, fist = fingertips near the wrist held for 0.35 s), so no camera data leaves the device.
