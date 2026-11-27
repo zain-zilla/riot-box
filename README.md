@@ -44,6 +44,12 @@
 - A **spectrum ring** of bars stands around you and reacts to what you play.
 - Built with three.js (vendored, still no build step) and the WebXR Device API; desktop fallback with mouse and keyboard.
 
+**Gesture Synth (WebXR, hands only)** — `gesture.html`
+- **Right hand:** pinch to play; raise or lower your hand to move through the notes (C minor pentatonic, so it always sounds musical). The note glides while you hold the pinch.
+- **Left hand:** its height sweeps the filter; pinch for a bass drone. **Hands apart** = more reverb. **Make a fist** to start or stop the beat.
+- Gestures are recognised on the headset from hand-joint geometry (pinch distance with hysteresis, fist = fingertips near the wrist held for 0.35 s), so no camera data leaves the device.
+- A note ladder, a fingertip trail, a live HUD and the spectrum ring show what you're doing. Shares one audio engine (`xr-audio.js`) with the pads version.
+
 **Export**
 - **Lossless WAV export** — renders the pattern (or the A→D chain) through an `OfflineAudioContext` with the *same* chain, drums and sidechain as live playback, then encodes 16-bit PCM WAV by hand.
 
@@ -139,6 +145,8 @@ riot-box/
 ├── style.css    # dark synth-panel theme
 ├── synth.js     # audio engine, effects, arp, sequencer, visuals, WAV encoder, MIDI
 ├── xr.html / xr.js  # WebXR VR mode (hands + controllers)
+├── gesture.html / gesture.js  # Gesture Synth: hands-only instrument
+├── xr-audio.js  # shared XR audio engine (voices, effects, drums, sidechain)
 ├── vendor/three.module.min.js  # three.js r160 (MIT)
 └── README.md
 ```

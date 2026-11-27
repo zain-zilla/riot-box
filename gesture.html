@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Gesture Synth · RIOT//BOX XR</title>
+<meta name="description" content="Play a synth with your bare hands in Meta Quest: pinch to play, raise your hand for higher notes, your other hand shapes the filter and reverb, make a fist to start the beat." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=JetBrains+Mono:wght@400;700&family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+  html, body { margin: 0; height: 100%; background: #0c0c0f; color: #f3f0e8; font-family: "Space Grotesk", sans-serif; overflow: hidden; }
+  #scene { position: fixed; inset: 0; }
+  .overlay { position: fixed; left: 16px; top: 16px; max-width: 380px; padding: 16px 18px; background: rgba(21,21,25,.92); border: 2px solid #2e2e36; box-shadow: 6px 6px 0 #000; }
+  h1 { margin: 0; font-family: "Anton", Impact, sans-serif; font-weight: 400; font-size: 36px; letter-spacing: 2px; text-shadow: 3px 3px 0 #ff2e88; }
+  .tag { display: inline-block; margin-left: 6px; padding: 1px 6px; font: 700 11px "JetBrains Mono", monospace; background: #2ef2ff; color: #000; vertical-align: middle; text-shadow: none; }
+  p, li { font-size: 13px; line-height: 1.45; color: #c9c6d3; }
+  p { margin: 10px 0 0; }
+  ul { margin: 8px 0 0; padding-left: 18px; }
+  strong { color: #f3f0e8; }
+  button { margin-top: 12px; padding: 10px 16px; font: 700 14px "Space Grotesk", sans-serif; text-transform: uppercase; background: #c6ff00; color: #000; border: 2px solid #000; box-shadow: 4px 4px 0 #ff2e88; cursor: pointer; }
+  button:disabled { background: #3a3a44; color: #8d8a99; box-shadow: none; cursor: not-allowed; }
+  a { color: #ff2e88; font-weight: 700; }
+  code { font: 11px "JetBrains Mono", monospace; background: #000; color: #c6ff00; padding: 1px 4px; }
+  #status { font-family: "JetBrains Mono", monospace; font-size: 11px; color: #8d8a99; margin-top: 8px; }
+</style>
+</head>
+<body>
+  <div id="scene"></div>
+  <div class="overlay" id="overlay">
+    <h1>GESTURE SYNTH <span class="tag">HANDS</span></h1>
+    <p>Play a synth with your bare hands in Meta Quest. Put the controllers down, then press Enter VR.</p>
+    <ul>
+      <li><strong>Right hand:</strong> pinch to play. Raise or lower your hand to change the note.</li>
+      <li><strong>Left hand:</strong> height opens the filter. Pinch for a bass drone.</li>
+      <li><strong>Hands apart:</strong> more reverb.</li>
+      <li><strong>Make a fist</strong> (either hand) to start or stop the beat.</li>
+    </ul>
+    <button id="enterVR" disabled>Checking VR…</button>
+    <p>No headset? Hold the mouse button and move up/down to play, left/right for the filter. <code>B</code> = beat, mouse wheel = reverb.</p>
+    <p><a href="xr.html">Pads version</a> · <a href="index.html">Full synth</a></p>
+    <div id="status">audio starts on your first click</div>
+  </div>
+  <script type="module" src="gesture.js"></script>
+</body>
+</html>
