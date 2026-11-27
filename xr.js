@@ -344,15 +344,58 @@ async function setupVRButton() {
     renderer.xr.setReferenceSpaceType("local-floor");
     await renderer.xr.setSession(session);
     document.getElementById("overlay").style.display = "none";
+    resetHeight();
     session.addEventListener("end", () => { document.getElementById("overlay").style.display = ""; });
   });
 }
 setupVRButton();
 
+// debug readout (add ?debug to the URL): shows which hand or controller holds each note
+const DEBUG = new URLSearchParams(location.search).has("debug");
+let debugTex = null, debugCanvas = null, debugText = "";
+const debugPlane = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.075), new THREE.MeshBasicMaterial({ transparent: true }));
+if (DEBUG) {
+  debugCanvas = document.createElement("canvas"); debugCanvas.width = 1024; debugCanvas.height = 128;
+  debugTex = new THREE.CanvasTexture(debugCanvas); debugTex.colorSpace = THREE.SRGBColorSpace;
+  debugPlane.material.map = debugTex;
+  debugPlane.position.set(0, 1.72, -1.0);
+  scene.add(debugPlane);
+}
+const NAMES = { hand0: "L finger", hand1: "R finger", grip0: "L grip", grip1: "R grip", ctrl0: "L pinch/trigger", ctrl1: "R pinch/trigger", mouse: "mouse" };
+function updateDebug() {
+  const parts = [];
+  for (const p of pads) if (p.userData.heldBy) parts.push(NOTE_NAMES[p.userData.note % 12] + (Math.floor(p.userData.note / 12) - 1) + " ← " + (NAMES[p.userData.heldBy] || p.userData.heldBy));
+  const text = parts.length ? parts.join("   ") : "no pads held";
+  if (text === debugText) return;
+  debugText = text;
+  const g = debugCanvas.getContext("2d");
+  g.clearRect(0, 0, 1024, 128); g.fillStyle = "rgba(0,0,0,0.7)"; g.fillRect(0, 0, 1024, 128);
+  g.fillStyle = "#2ef2ff"; g.font = "bold 44px 'JetBrains Mono', monospace"; g.textAlign = "center"; g.textBaseline = "middle";
+  g.fillText(text, 512, 64);
+  debugTex.needsUpdate = true;
+}
+
+// auto height: once in VR, move the whole setup to match the player's head (works seated or standing)
+const DESIGN_HEAD = 1.5;
+const stageObjects = () => [title, debugPlane, ...pads, ...buttons, ...faders.map((f) => f.group)];
+let heightDone = false, heightFrames = 0, appliedShift = 0;
+function autoHeight() {
+  if (heightDone || !renderer.xr.isPresenting) return;
+  if (++heightFrames < 30) return; // let tracking settle
+  const head = renderer.xr.getCamera().getWorldPosition(new THREE.Vector3()).y;
+  if (head < 0.5) return;
+  const shift = Math.max(-0.7, Math.min(0.4, head - DESIGN_HEAD));
+  stageObjects().forEach((o) => { o.position.y += shift - appliedShift; o.updateMatrixWorld(true); });
+  appliedShift = shift;
+  heightDone = true;
+}
+function resetHeight() { heightDone = false; heightFrames = 0; }
+
 // ---------------------------------------------------------------- render loop
 
 renderer.setAnimationLoop(() => {
-  if (renderer.xr.isPresenting) updateTouch();
+  if (renderer.xr.isPresenting) { autoHeight(); updateTouch(); }
+  if (DEBUG) updateDebug();
   for (const p of pads) {
     if (p.userData.heldBy && !held.has(p.userData.heldBy)) p.userData.heldBy = null;
     const target = p.userData.heldBy ? 1 : 0;
@@ -383,4 +426,4 @@ window.addEventListener("resize", () => {
 });
 
 // tiny hook for automated tests
-window.__riotXR = { pads, buttons, faders, live, setFaderFromWorld, camera, touchers, touchPoint, triggerObject, releaseKey, held, get ctx() { return ctx; }, get analyser() { return analyser; } };
+window.__riotXR = { pads, buttons, faders, live, setFaderFromWorld, camera, touchers, touchPoint, get debugText() { return debugText; }, triggerObject, releaseKey, held, get ctx() { return ctx; }, get analyser() { return analyser; } };
