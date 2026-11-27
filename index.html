@@ -3,16 +3,21 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Web Synth</title>
+<title>ANOMALY · Browser Synth</title>
 <meta name="description" content="A polyphonic browser synthesizer with unison, LFO, drive, delay, reverb, sidechain, arpeggiator, a step sequencer with drums, MIDI input and WAV export." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=JetBrains+Mono:wght@400;700&family=Permanent+Marker&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="app">
     <header>
       <div class="brand">
-        <h1>Web Synth <span class="version">v2</span></h1>
-        <span class="tagline">See what you hear</span>
+        <h1 data-text="ANOMALY">ANOMALY</h1>
+        <span class="version">v2.1</span>
+        <span class="tagline">see what you hear!</span>
+        <span class="subline">browser synth // no rules, no libraries</span>
       </div>
       <div class="power">
         <button id="aboutBtn" class="icon-btn" title="About / Tech Specs" aria-label="About and technical specs">ⓘ</button>
@@ -283,12 +288,14 @@
           <button data-brush="note" class="active">● Note</button>
           <button data-brush="accent">◆ Accent</button>
           <button data-brush="erase">✕ Erase</button>
+          <button data-brush="mute">⊘ Mute</button>
         </div>
         <div class="tool-group">
           <button id="seqShiftLeft" title="Shift pattern left">◀</button>
           <button id="seqShiftRight" title="Shift pattern right">▶</button>
           <button id="seqRandomBtn">🎲 Random</button>
           <button id="seqClearBtn">Clear</button>
+          <button id="unmuteAllBtn" title="Unmute every note and row in this pattern">Unmute all</button>
         </div>
         <div class="tool-group">
           <span class="tool-label">Pattern</span>
@@ -301,7 +308,7 @@
         <div class="seq-labels" id="seqLabels"></div>
         <div class="seq-grid" id="seqGrid"></div>
       </div>
-      <p class="hint">Click or drag to paint notes. Accents play louder. The kick row drives the sidechain. Press <code>Space</code> to play or stop.</p>
+      <p class="hint">Click or drag to paint notes. Accents play louder. <strong>Mute brush</strong> silences a note without deleting it (click again to unmute). Click a <strong>row name</strong> to mute the whole row. The kick row drives the sidechain. <code>Space</code> plays or stops.</p>
 
       <div class="export-row">
         <label class="inline-label">Loops

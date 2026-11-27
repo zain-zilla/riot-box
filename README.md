@@ -1,14 +1,14 @@
-# 🎹 Web Synth
+# ⚡ ANOMALY: a browser synth
 
 **A polyphonic synthesizer that runs entirely in the browser: unison, LFO, drive, delay, reverb, sidechain, an arpeggiator, a step sequencer with drums, real MIDI hardware support, live visuals for every effect, and a WAV export engine written from scratch on the Web Audio API. No build step, no dependencies.**
 
-[![Live Demo](https://img.shields.io/badge/demo-live-6ee7c2?style=for-the-badge)](https://zain-zilla.github.io/web-synth-1/)
+[![Live Demo](https://img.shields.io/badge/demo-live-ff2e88?style=for-the-badge)](https://zain-zilla.github.io/web-synth-1/)
 &nbsp;
 ![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=flat-square&logo=html5&logoColor=white)
 ![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=flat-square&logo=css3&logoColor=white)
 ![JavaScript](https://img.shields.io/badge/JavaScript-ES2020-F7DF1E?style=flat-square&logo=javascript&logoColor=black)
-![Web Audio API](https://img.shields.io/badge/Web%20Audio%20API-6ee7c2?style=flat-square)
-![Web MIDI API](https://img.shields.io/badge/Web%20MIDI%20API-6ee7c2?style=flat-square)
+![Web Audio API](https://img.shields.io/badge/Web%20Audio%20API-ff2e88?style=flat-square)
+![Web MIDI API](https://img.shields.io/badge/Web%20MIDI%20API-ff2e88?style=flat-square)
 ![No dependencies](https://img.shields.io/badge/dependencies-none-success?style=flat-square)
 
 **Repo:** [github.com/zain-zilla/web-synth-1](https://github.com/zain-zilla/web-synth-1) · **Live:** [zain-zilla.github.io/web-synth-1](https://zain-zilla.github.io/web-synth-1/)
@@ -19,6 +19,8 @@
 
 ## ✨ Key Features (v2)
 
+**Look:** modern punk: neon pink and acid lime on black, poster type (Anton), Space Grotesk body, JetBrains Mono readouts, hand-lettered tagline.
+
 **Sound**
 - **Polyphonic engine with unison** — every note spawns its own voice: 1–7 detuned oscillators spread across the stereo field → resonant lowpass filter with its own envelope → ADSR amp envelope. Four waveforms.
 - **LFO** — sine / triangle / square / saw, routed to pitch (vibrato), filter (wobble) or volume (tremolo).
@@ -28,7 +30,7 @@
 
 **Play**
 - **Arpeggiator** — up, down, up-down, random, as-played; 1/8 to 1/32 (with triplets); 1–3 octaves; gate; latch. Locks to the sequencer grid when it's running.
-- **Step sequencer** — 8 note rows in any of 8 scales and 12 roots, plus a **drum lane** (kick, snare, hat). Click-drag painting, accent brush, swing, gate, 8/12/16-step length, shift left/right, a musical randomiser, and **4 pattern slots (A–D)** that can play as a chain. `Space` plays and stops.
+- **Step sequencer** — 8 note rows in any of 8 scales and 12 roots, plus a **drum lane** (kick, snare, hat). Click-drag painting, accent brush, a **mute brush** (silence a note without deleting it), **row mutes** (click a row name), swing, gate, 8/12/16-step length, shift left/right, a musical randomiser, and **4 pattern slots (A–D)** that can play as a chain. `Space` plays and stops.
 - **Web MIDI** — note on/off with velocity, **sustain pedal (CC64)**, **pitch bend (±2 semitones)**, mod wheel → cutoff, CC123 all-notes-off, and an activity LED.
 
 **See what you hear**

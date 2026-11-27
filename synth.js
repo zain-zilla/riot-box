@@ -576,8 +576,10 @@
   const seq = { root: 0, scale: "Minor", length: 16, gate: 0.85, swing: 0 };
 
   const emptyPattern = () => ({
-    notes: Array.from({ length: ROWS }, () => new Array(MAX_STEPS).fill(0)), // 0 off, 1 on, 2 accent
+    notes: Array.from({ length: ROWS }, () => new Array(MAX_STEPS).fill(0)), // 0 off, 1 on, 2 accent, <0 muted
     drums: Array.from({ length: DRUMS.length }, () => new Array(MAX_STEPS).fill(0)),
+    // whole-row mutes; a muted single note is stored as a negative value (-1 / -2)
+    mutes: { notes: new Array(ROWS).fill(false), drums: new Array(DRUMS.length).fill(false) },
   });
   const patterns = [emptyPattern(), emptyPattern(), emptyPattern(), emptyPattern()];
   let editSlot = 0;
@@ -605,17 +607,18 @@
   function scheduleStep(audioCtx, c, pat, step, t, s, opts) {
     const dur = opts.dur;
     const notes = opts.rowNotes;
+    const mutes = pat.mutes;
     for (let row = 0; row < ROWS; row++) {
       const v = pat.notes[row][step];
-      if (!v) continue;
+      if (v <= 0 || mutes.notes[row]) continue;
       const voice = new Voice(audioCtx, c, notes[row], v === 2 ? 1 : 0.65, t, s);
       voice.release(t + dur * opts.gate);
     }
     DRUMS.forEach((d, i) => {
       const v = pat.drums[i][step];
-      if (v) playDrum(audioCtx, c, d, t, v === 2 ? 1 : 0.7);
+      if (v > 0 && !mutes.drums[i]) playDrum(audioCtx, c, d, t, v === 2 ? 1 : 0.7);
     });
-    const kickHit = pat.drums[0][step];
+    const kickHit = pat.drums[0][step] > 0 && !mutes.drums[0];
     if ((s.scSource === "kick" && kickHit) || (s.scSource === "beat" && step % 4 === 0)) {
       duckAt(c, t, s, opts.record);
     }
@@ -1241,6 +1244,7 @@
     let c = "seq-cell";
     if (v === 1) c += " on";
     if (v === 2) c += " accent";
+    if (v < 0) c += " muted" + (v === -2 ? " accent-muted" : "");
     if (step >= seq.length) c += " disabled";
     if (step % 4 === 0) c += " beat";
     return c;
@@ -1252,13 +1256,18 @@
     labels.innerHTML = "";
     grid.innerHTML = "";
     const notes = rowNotes(baseNote());
+    const mutes = patterns[editSlot].mutes;
     const addRow = (lane, row, label, cls) => {
-      const lab = document.createElement("div");
-      lab.className = "seq-label " + cls;
-      lab.textContent = label;
+      const muted = (lane === "n" ? mutes.notes : mutes.drums)[row];
+      const lab = document.createElement("button");
+      lab.className = "seq-label " + cls + (muted ? " row-muted" : "");
+      lab.title = muted ? "Row muted: click to unmute" : "Click to mute this row";
+      lab.setAttribute("aria-pressed", muted ? "true" : "false");
+      lab.innerHTML = `<span class="lab-text">${label}</span><span class="mute-pill">${muted ? "MUTED" : "M"}</span>`;
+      lab.addEventListener("click", () => toggleRowMute(lane, row));
       labels.appendChild(lab);
       const rowEl = document.createElement("div");
-      rowEl.className = "seq-row " + cls;
+      rowEl.className = "seq-row " + cls + (muted ? " row-muted" : "");
       for (let step = 0; step < MAX_STEPS; step++) {
         const cell = document.createElement("div");
         cell.className = cellClass(cellValue(lane, row, step), step);
@@ -1286,19 +1295,50 @@
     el.className = cellClass(v, +el.dataset.step) + (keepPlayhead ? " playhead" : "");
   }
 
+  let paintMode = "set"; // "set" | "mute" | "unmute"
+
   function applyPaint(el) {
     if (!el || !el.classList.contains("seq-cell") || el.classList.contains("disabled")) return;
     const lane = el.dataset.lane;
     const row = +el.dataset.row;
     const step = +el.dataset.step;
-    if (cellValue(lane, row, step) === paintValue) return;
-    setCell(lane, row, step, paintValue);
+    const cur = cellValue(lane, row, step);
+    let next;
+    if (paintMode === "mute") {
+      if (cur <= 0) return;
+      next = -cur;
+    } else if (paintMode === "unmute") {
+      if (cur >= 0) return;
+      next = -cur;
+    } else {
+      next = paintValue;
+      if (cur === next) return;
+    }
+    setCell(lane, row, step, next);
     updateCellEl(el);
     renderSlots();
-    if (paintValue && !seqPlaying) previewCell(lane, row);
+    if (next > 0 && !seqPlaying) previewCell(lane, row, next);
   }
 
-  function previewCell(lane, row) {
+  function toggleRowMute(lane, row) {
+    const m = patterns[editSlot].mutes;
+    const arr = lane === "n" ? m.notes : m.drums;
+    arr[row] = !arr[row];
+    renderSequencer();
+  }
+
+  function unmuteAll() {
+    const p = patterns[editSlot];
+    p.mutes.notes.fill(false);
+    p.mutes.drums.fill(false);
+    const fix = (r) => r.forEach((v, i) => (r[i] = Math.abs(v)));
+    p.notes.forEach(fix);
+    p.drums.forEach(fix);
+    renderSequencer();
+  }
+
+  function previewCell(lane, row, val) {
+    const paintValue = val;
     ensureContext();
     if (ctx.state === "suspended") ctx.resume().then(setStatus);
     const t = ctx.currentTime + 0.01;
@@ -1316,7 +1356,11 @@
     if (!el.classList.contains("seq-cell") || el.classList.contains("disabled")) return;
     e.preventDefault();
     const cur = cellValue(el.dataset.lane, +el.dataset.row, +el.dataset.step);
-    if (brush === "erase") paintValue = 0;
+    paintMode = "set";
+    if (brush === "mute") {
+      if (!cur) return; // nothing to mute on an empty step
+      paintMode = cur > 0 ? "mute" : "unmute";
+    } else if (brush === "erase") paintValue = 0;
     else if (brush === "accent") paintValue = cur === 2 ? 0 : 2;
     else paintValue = cur ? 0 : 1;
     painting = true;
@@ -1423,9 +1467,11 @@
       if (s % 8 === 4) p.drums[1][s] = 1;
       if (s % 2 === 1 || Math.random() < 0.25) p.drums[2][s] = s % 4 === 2 ? 2 : 1;
     }
+    p.mutes = patterns[editSlot].mutes; // keep row mutes when re-rolling
     patterns[editSlot] = p;
     renderSequencer();
   }
+  $("unmuteAllBtn").addEventListener("click", unmuteAll);
   $("seqRandomBtn").addEventListener("click", randomPattern);
   $("seqClearBtn").addEventListener("click", () => {
     patterns[editSlot] = emptyPattern();
@@ -1443,10 +1489,10 @@
 
   // ---------- Visuals: see what you hear ----------
 
-  const ACCENT = "#6ee7c2";
-  const ACCENT_2 = "#ffd166";
-  const GRID = "#2c303a";
-  const DIM = "#8b8f9c";
+  const ACCENT = "#ff2e88";
+  const ACCENT_2 = "#c6ff00";
+  const GRID = "#26262d";
+  const DIM = "#8d8a99";
 
   function fit(canvas) {
     const dpr = window.devicePixelRatio || 1;
@@ -1465,7 +1511,7 @@
 
   function label(g, text, x, y, color = DIM, align = "left") {
     g.fillStyle = color;
-    g.font = "10px -apple-system, Segoe UI, Roboto, sans-serif";
+    g.font = "10px 'JetBrains Mono', ui-monospace, monospace";
     g.textAlign = align;
     g.fillText(text, x, y);
   }
@@ -1541,8 +1587,9 @@
       for (let i = i0; i < i1 && i < freqData.length; i++) m = Math.max(m, freqData[i]);
       const bh = (m / 255) * (h - 14);
       const grad = g.createLinearGradient(0, h, 0, h - bh);
-      grad.addColorStop(0, "#3a8f74");
-      grad.addColorStop(1, ACCENT);
+      grad.addColorStop(0, "#5a0f35");
+      grad.addColorStop(0.6, ACCENT);
+      grad.addColorStop(1, ACCENT_2);
       g.fillStyle = grad;
       g.fillRect(b * bw + 1, h - 12 - bh, bw - 2, bh);
     }
@@ -1595,7 +1642,7 @@
     g.lineTo(X(a + d + hold), Y(s));
     g.lineTo(X(total), Y(0));
     g.stroke();
-    g.fillStyle = "rgba(110,231,194,0.12)";
+    g.fillStyle = "rgba(255,46,136,0.16)";
     g.lineTo(X(0), Y(0));
     g.fill();
     label(g, "A", X(a / 2), h - 1, DIM, "center");
