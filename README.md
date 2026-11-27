@@ -1,6 +1,6 @@
 # 🎹 Web Synth
 
-**A polyphonic subtractive synthesizer that runs entirely in the browser — no build step, no dependencies, real MIDI hardware support, and a lossless WAV export engine written from scratch on top of the Web Audio API.**
+**A polyphonic synthesizer that runs entirely in the browser: unison, LFO, drive, delay, reverb, sidechain, an arpeggiator, a step sequencer with drums, real MIDI hardware support, live visuals for every effect, and a WAV export engine written from scratch on the Web Audio API. No build step, no dependencies.**
 
 [![Live Demo](https://img.shields.io/badge/demo-live-6ee7c2?style=for-the-badge)](https://zain-zilla.github.io/web-synth-1/)
 &nbsp;
@@ -17,15 +17,26 @@
 
 ---
 
-## ✨ Key Features
+## ✨ Key Features (v2)
 
-- **Polyphonic synth engine** — every key/MIDI note/sequencer step spawns its own oscillator → filter → amp-envelope voice chain, so chords and overlapping notes never steal each other's tails. Four waveforms (sine, triangle, sawtooth, square), full ADSR amp envelope, and a filter envelope that sweeps the cutoff on every note-on.
-- **16-step sequencer** — an 8-row × 16-step piano-roll grid (descending major scale) with adjustable BPM, start/stop transport, and a sample-accurate lookahead scheduler (the classic Web Audio "schedule ahead of time" pattern) so playback doesn't drift or stutter under JS event-loop jitter.
-- **Real-time canvas oscilloscope** — an `AnalyserNode` feeds a `requestAnimationFrame` loop that draws the live waveform at the display's refresh rate, so you can see exactly what the filter and envelope are doing as you play.
-- **Delay / effects bus** — a feedback delay line (time, feedback, wet mix) sits between the voice bus and master out, shared by every voice, with live-updating controls.
-- **Web MIDI plug-and-play** — connect any class-compliant USB MIDI controller (Launchkey, Roland, Arturia, etc.); note-on/off with velocity, mod wheel → filter cutoff, all handled with zero configuration.
-- **Lossless WAV export** — renders the current sequencer pattern through an `OfflineAudioContext` (1–4 loops) and encodes the result to 16-bit PCM WAV **by hand, byte-for-byte, with no external libraries**, then triggers a browser download.
-- **About / Tech Specs drawer** — a slide-over panel (▸ the info icon in the header) showing a live signal-flow diagram and real-time performance metrics (audio context state, sample rate, active voice count, output latency).
+**Sound**
+- **Polyphonic engine with unison** — every note spawns its own voice: 1–7 detuned oscillators spread across the stereo field → resonant lowpass filter with its own envelope → ADSR amp envelope. Four waveforms.
+- **LFO** — sine / triangle / square / saw, routed to pitch (vibrato), filter (wobble) or volume (tremolo).
+- **Effects** — soft-clip **drive** (WaveShaper with 4× oversampling and auto make-up gain), feedback **delay**, and a **reverb** whose impulse response is generated in code (decaying stereo noise, no sample files).
+- **Sidechain** — ducks the synth on every sequencer kick (or every beat) for the classic pumping sound. Drums bypass the duck, just like a real mix.
+- **Presets** — 7 built-in sounds (Fat Bass, Warm Pad, Lead, Pluck, Wobble, Pumping Chords…) plus save / load / delete your own, stored in the browser.
+
+**Play**
+- **Arpeggiator** — up, down, up-down, random, as-played; 1/8 to 1/32 (with triplets); 1–3 octaves; gate; latch. Locks to the sequencer grid when it's running.
+- **Step sequencer** — 8 note rows in any of 8 scales and 12 roots, plus a **drum lane** (kick, snare, hat). Click-drag painting, accent brush, swing, gate, 8/12/16-step length, shift left/right, a musical randomiser, and **4 pattern slots (A–D)** that can play as a chain. `Space` plays and stops.
+- **Web MIDI** — note on/off with velocity, **sustain pedal (CC64)**, **pitch bend (±2 semitones)**, mod wheel → cutoff, CC123 all-notes-off, and an activity LED.
+
+**See what you hear**
+- Live **oscilloscope** (zero-crossing triggered so the wave stands still) and a log-scale **spectrum analyser**.
+- A visual for every module: unison spread, **ADSR shape**, the filter's real **frequency-response curve** (it moves when the LFO wobbles it), animated **LFO** wave, **drive transfer curve**, **delay echo** decay, **reverb tail**, and a live **sidechain gain meter**.
+
+**Export**
+- **Lossless WAV export** — renders the pattern (or the A→D chain) through an `OfflineAudioContext` with the *same* chain, drums and sidechain as live playback, then encodes 16-bit PCM WAV by hand.
 
 ---
 
@@ -34,31 +45,33 @@
 ### Signal chain
 
 ```
-Oscillator ──▶ ADSR Gain ──▶ BiquadFilter (lowpass, w/ its own envelope) ──┐
-                                                                            ├──▶ Voice Bus
-                                                                            │
-Voice Bus ──▶ dry path ─────────────────────────────────────────▶ Master Gain
-          └─▶ DelayNode ──▶ feedback loop ──▶ wet mix ───────────▶ Master Gain
+Voice: [osc × unison → stereo pan] → mix → BiquadFilter (lowpass + env) → Amp (ADSR)
+                                         ▲ LFO→filter     ▲ LFO→pitch (osc.detune)
 
-Master Gain ──▶ AnalyserNode (oscilloscope tap) ──▶ ctx.destination
+Voices → Voice Bus → Tremolo (LFO→gain) → Drive (WaveShaper) ─┬─ dry ───────┐
+                                                              ├─ Delay ─────┤→ Duck (sidechain) → Master
+                                                              └─ Reverb ────┘                        ▲
+Drums (kick / snare / hat) → Drum Bus ───────────────────────────────────────────────────────────────┘
+Master → AnalyserNode (scope + spectrum) → speakers
 ```
 
-Every note — whether triggered by the on-screen keyboard, your computer keyboard, a MIDI controller, or the sequencer — creates a `Voice`: a fresh `OscillatorNode` → `BiquadFilterNode` → `GainNode` chain with its own scheduled ADSR automation curves (`setValueAtTime` / `linearRampToValueAtTime`), so voices never interfere with each other's envelopes. All voices sum into a shared **voice bus**, which splits into a dry path and a delay ("effects bus") path before hitting the master gain and, finally, an `AnalyserNode` used purely for visualization.
+The LFO is a single `OscillatorNode` that runs constantly; three gain nodes scale it into cents (pitch), Hz (filter) or gain (tremolo). Changing the target only changes those gains, so there are no clicks.
 
 ### One signal-chain builder, two contexts
 
-The signal chain (`createSignalChain()`) and the `Voice` class both take the `AudioContext` as an explicit parameter rather than reading a global. That means the **exact same code path** builds the graph for:
+`createSignalChain()`, `Voice`, `playDrum()` and `scheduleStep()` all take the audio context as a parameter. The **same code** builds the live graph and the `OfflineAudioContext` used for export, so the WAV matches what you hear, sidechain pumping included.
 
-1. **Live playback** — a real-time `AudioContext` wired to your speakers.
-2. **WAV export** — an `OfflineAudioContext` that renders the whole sequencer pattern (all loops, full release tails) as fast as your CPU allows, with the identical topology, so the exported file matches what you actually hear.
+### Effect visuals without extra audio
+
+The filter curve comes from a silent probe `BiquadFilterNode` and `getFrequencyResponse()`, so the drawing is the real maths of the filter, not an approximation. The drive panel plots the exact curve fed to the WaveShaper. The sidechain meter replays the scheduled duck envelopes against `currentTime`.
 
 ### Hand-rolled PCM WAV encoder
 
-There is no `MediaRecorder`, no `lamejs`, no `wav-encoder` npm package. `encodeWavBlob()` walks the rendered `AudioBuffer`'s channel data, clamps each float sample to `[-1, 1]`, converts it to 16-bit signed PCM, and writes a complete 44-byte RIFF/WAVE header plus interleaved sample data directly into an `ArrayBuffer` — which becomes a `Blob` and a one-click download. It's ~50 lines and has zero dependencies.
+No `MediaRecorder`, no npm packages. `encodeWavBlob()` clamps each float sample, converts to 16-bit PCM and writes the 44-byte RIFF/WAVE header plus interleaved data into an `ArrayBuffer`.
 
-### Sequencer scheduling
+### Sequencer & arp scheduling
 
-The sequencer uses the standard Web Audio "lookahead scheduler" technique: a `setInterval` polls every 25ms and schedules any notes falling within the next 100ms using precise `AudioContext` time (not `setTimeout` timing, which drifts under load). Visual playhead updates are synced to the same schedule via a timed callback.
+Both use the Web Audio "lookahead scheduler": a 25 ms `setInterval` schedules anything in the next 100 ms on the audio clock, which never drifts. Swing delays every off-beat 16th by a share of a step.
 
 ---
 
@@ -75,7 +88,9 @@ The sequencer uses the standard Web Audio "lookahead scheduler" technique: a `se
 |---|---|
 | Note On / Off (status `0x90`/`0x80`) | Triggers/releases a voice, velocity → envelope peak amplitude |
 | CC 1 (Mod Wheel) | Sweeps the filter cutoff slider live |
-| CC 64 (Sustain Pedal) | Recognized but not yet wired to voice hold — contribution welcome |
+| CC 64 (Sustain Pedal) | Holds notes until the pedal is released (works with the arp too) |
+| Pitch bend | ±2 semitones on every sounding voice |
+| CC 123 | All notes off |
 
 **Browser requirements:** Web MIDI needs a secure context (`https://` or `localhost`) and is currently supported in Chromium-based browsers (Chrome, Edge, Opera, Brave). Firefox and Safari require a flag or don't support it yet — the app degrades gracefully and reports "Web MIDI not supported" rather than breaking.
 
@@ -111,8 +126,8 @@ To host your own copy, fork the repo, then go to **Settings → Pages → Source
 
 ```
 web-synth/
-├── index.html   # markup: controls, keyboard, sequencer grid, About drawer
-├── style.css    # dark synth-panel theme, sequencer/drawer/keyboard styling
-├── synth.js     # audio engine, sequencer scheduler, WAV encoder, MIDI, UI wiring
+├── index.html   # markup: presets, visualisers, modules, sequencer, keyboard, About drawer
+├── style.css    # dark synth-panel theme
+├── synth.js     # audio engine, effects, arp, sequencer, visuals, WAV encoder, MIDI
 └── README.md
 ```

@@ -4,12 +4,16 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Web Synth</title>
+<meta name="description" content="A polyphonic browser synthesizer with unison, LFO, drive, delay, reverb, sidechain, arpeggiator, a step sequencer with drums, MIDI input and WAV export." />
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="app">
     <header>
-      <h1>Web Synth</h1>
+      <div class="brand">
+        <h1>Web Synth <span class="version">v2</span></h1>
+        <span class="tagline">See what you hear</span>
+      </div>
       <div class="power">
         <button id="aboutBtn" class="icon-btn" title="About / Tech Specs" aria-label="About and technical specs">ⓘ</button>
         <button id="startBtn">▶ Start Audio</button>
@@ -17,40 +21,75 @@
       </div>
     </header>
 
+    <!-- ---------- Presets ---------- -->
+    <section class="panel preset-bar" aria-label="Presets">
+      <h2>Presets</h2>
+      <div class="preset-buttons" id="presetButtons"></div>
+      <div class="preset-save">
+        <input type="text" id="presetName" placeholder="Name your sound" maxlength="24" />
+        <button id="savePresetBtn">Save</button>
+        <select id="userPresets" aria-label="Your saved presets"><option value="">Your presets</option></select>
+        <button id="deletePresetBtn" title="Delete selected preset">Delete</button>
+      </div>
+    </section>
+
+    <!-- ---------- Visualizer ---------- -->
+    <section class="panel viz-panel">
+      <div class="viz-block">
+        <h2>Waveform</h2>
+        <canvas id="scope" class="viz viz-tall"></canvas>
+      </div>
+      <div class="viz-block">
+        <h2>Spectrum</h2>
+        <canvas id="spectrum" class="viz viz-tall"></canvas>
+      </div>
+    </section>
+
     <main>
       <section class="panel">
         <h2>Oscillator</h2>
         <div class="waveform-buttons" id="waveformButtons">
-          <button data-wave="sine" class="wave-btn active">Sine</button>
+          <button data-wave="sine" class="wave-btn">Sine</button>
           <button data-wave="triangle" class="wave-btn">Triangle</button>
-          <button data-wave="sawtooth" class="wave-btn">Saw</button>
+          <button data-wave="sawtooth" class="wave-btn active">Saw</button>
           <button data-wave="square" class="wave-btn">Square</button>
         </div>
+        <div class="sliders spaced">
+          <label>Unison voices <span class="val" id="unisonVal">1</span>
+            <input type="range" id="unison" min="1" max="7" step="1" value="1">
+          </label>
+          <label>Detune spread <span class="val" id="detuneVal">12 ct</span>
+            <input type="range" id="detune" min="0" max="50" step="1" value="12">
+          </label>
+        </div>
+        <canvas id="unisonViz" class="viz"></canvas>
       </section>
 
       <section class="panel">
         <h2>Amp Envelope</h2>
+        <canvas id="adsrViz" class="viz"></canvas>
         <div class="sliders">
           <label>Attack <span class="val" id="attackVal">0.01s</span>
             <input type="range" id="attack" min="0" max="2" step="0.01" value="0.01">
           </label>
-          <label>Decay <span class="val" id="decayVal">0.10s</span>
-            <input type="range" id="decay" min="0" max="2" step="0.01" value="0.1">
+          <label>Decay <span class="val" id="decayVal">0.20s</span>
+            <input type="range" id="decay" min="0" max="2" step="0.01" value="0.2">
           </label>
           <label>Sustain <span class="val" id="sustainVal">0.70</span>
             <input type="range" id="sustain" min="0" max="1" step="0.01" value="0.7">
           </label>
           <label>Release <span class="val" id="releaseVal">0.30s</span>
-            <input type="range" id="release" min="0" max="3" step="0.01" value="0.3">
+            <input type="range" id="release" min="0.01" max="3" step="0.01" value="0.3">
           </label>
         </div>
       </section>
 
       <section class="panel">
         <h2>Filter</h2>
+        <canvas id="filterViz" class="viz"></canvas>
         <div class="sliders">
-          <label>Cutoff <span class="val" id="cutoffVal">4000Hz</span>
-            <input type="range" id="cutoff" min="80" max="12000" step="1" value="4000">
+          <label>Cutoff <span class="val" id="cutoffVal">3000Hz</span>
+            <input type="range" id="cutoff" min="80" max="12000" step="1" value="3000">
           </label>
           <label>Resonance <span class="val" id="resonanceVal">1.0</span>
             <input type="range" id="resonance" min="0.1" max="20" step="0.1" value="1">
@@ -62,10 +101,53 @@
       </section>
 
       <section class="panel">
-        <h2>Delay / Effects Bus</h2>
+        <h2>LFO</h2>
+        <canvas id="lfoViz" class="viz"></canvas>
+        <div class="select-row">
+          <label>Target
+            <select id="lfoTarget">
+              <option value="off">Off</option>
+              <option value="pitch">Pitch (vibrato)</option>
+              <option value="filter">Filter (wobble)</option>
+              <option value="volume">Volume (tremolo)</option>
+            </select>
+          </label>
+          <label>Shape
+            <select id="lfoWave">
+              <option value="sine">Sine</option>
+              <option value="triangle">Triangle</option>
+              <option value="square">Square</option>
+              <option value="sawtooth">Saw</option>
+            </select>
+          </label>
+        </div>
+        <div class="sliders">
+          <label>Rate <span class="val" id="lfoRateVal">4.0Hz</span>
+            <input type="range" id="lfoRate" min="0.1" max="20" step="0.1" value="4">
+          </label>
+          <label>Depth <span class="val" id="lfoDepthVal">50%</span>
+            <input type="range" id="lfoDepth" min="0" max="1" step="0.01" value="0.5">
+          </label>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Drive</h2>
+        <canvas id="driveViz" class="viz"></canvas>
+        <div class="sliders">
+          <label>Amount <span class="val" id="driveVal">0%</span>
+            <input type="range" id="drive" min="0" max="1" step="0.01" value="0">
+          </label>
+        </div>
+        <p class="hint">The curve shows how loud parts get squashed. Straight line = clean.</p>
+      </section>
+
+      <section class="panel">
+        <h2>Delay</h2>
+        <canvas id="delayViz" class="viz"></canvas>
         <div class="sliders">
           <label>Time <span class="val" id="delayTimeVal">0.25s</span>
-            <input type="range" id="delayTime" min="0" max="1" step="0.01" value="0.25">
+            <input type="range" id="delayTime" min="0.01" max="1" step="0.01" value="0.25">
           </label>
           <label>Feedback <span class="val" id="delayFeedbackVal">30%</span>
             <input type="range" id="delayFeedback" min="0" max="0.9" step="0.01" value="0.3">
@@ -77,40 +159,155 @@
       </section>
 
       <section class="panel">
-        <h2>Master</h2>
+        <h2>Reverb</h2>
+        <canvas id="reverbViz" class="viz"></canvas>
         <div class="sliders">
-          <label>Volume <span class="val" id="volumeVal">30%</span>
-            <input type="range" id="volume" min="0" max="1" step="0.01" value="0.3">
+          <label>Size <span class="val" id="reverbSizeVal">2.5s</span>
+            <input type="range" id="reverbSize" min="0.3" max="6" step="0.1" value="2.5">
+          </label>
+          <label>Mix <span class="val" id="reverbMixVal">0%</span>
+            <input type="range" id="reverbMix" min="0" max="1" step="0.01" value="0">
           </label>
         </div>
-        <canvas id="scope" width="260" height="80"></canvas>
       </section>
 
       <section class="panel">
-        <h2>MIDI</h2>
+        <h2>Sidechain</h2>
+        <canvas id="sidechainViz" class="viz"></canvas>
+        <div class="select-row">
+          <label>Trigger
+            <select id="scSource">
+              <option value="kick">Sequencer kick</option>
+              <option value="beat">Every beat</option>
+            </select>
+          </label>
+        </div>
+        <div class="sliders">
+          <label>Amount <span class="val" id="scAmountVal">0%</span>
+            <input type="range" id="scAmount" min="0" max="1" step="0.01" value="0">
+          </label>
+          <label>Release <span class="val" id="scReleaseVal">0.25s</span>
+            <input type="range" id="scRelease" min="0.05" max="0.8" step="0.01" value="0.25">
+          </label>
+        </div>
+        <p class="hint">Ducks the synth when the kick hits, for the classic pumping sound. Plays with the sequencer.</p>
+      </section>
+
+      <section class="panel">
+        <h2>Arpeggiator</h2>
+        <div class="toggle-row">
+          <button id="arpToggle" class="toggle">Arp Off</button>
+          <button id="arpLatch" class="toggle">Latch Off</button>
+        </div>
+        <div class="select-row">
+          <label>Mode
+            <select id="arpMode">
+              <option value="up">Up</option>
+              <option value="down">Down</option>
+              <option value="updown">Up-Down</option>
+              <option value="random">Random</option>
+              <option value="order">As played</option>
+            </select>
+          </label>
+          <label>Rate
+            <select id="arpRate">
+              <option value="1/8">1/8</option>
+              <option value="1/8T">1/8 triplet</option>
+              <option value="1/16" selected>1/16</option>
+              <option value="1/16T">1/16 triplet</option>
+              <option value="1/32">1/32</option>
+            </select>
+          </label>
+        </div>
+        <div class="sliders">
+          <label>Octaves <span class="val" id="arpOctavesVal">1</span>
+            <input type="range" id="arpOctaves" min="1" max="3" step="1" value="1">
+          </label>
+          <label>Gate <span class="val" id="arpGateVal">60%</span>
+            <input type="range" id="arpGate" min="0.1" max="1" step="0.01" value="0.6">
+          </label>
+        </div>
+        <p class="hint">Hold a chord and the arp plays its notes in a pattern, in time with the BPM.</p>
+      </section>
+
+      <section class="panel">
+        <h2>Master</h2>
+        <div class="sliders">
+          <label>Synth volume <span class="val" id="volumeVal">40%</span>
+            <input type="range" id="volume" min="0" max="1" step="0.01" value="0.4">
+          </label>
+          <label>Drum volume <span class="val" id="drumVolumeVal">70%</span>
+            <input type="range" id="drumVolume" min="0" max="1" step="0.01" value="0.7">
+          </label>
+        </div>
+        <h2 class="sub">MIDI</h2>
         <button id="midiBtn">Enable MIDI Input</button>
         <select id="midiDevices"><option>No devices connected</option></select>
-        <p class="hint" id="midiStatus">MIDI not enabled</p>
+        <p class="hint midi-status"><span id="midiLed" class="led"></span><span id="midiStatus">MIDI not enabled</span></p>
       </section>
     </main>
 
+    <!-- ---------- Sequencer ---------- -->
     <section class="panel wide-panel">
       <div class="seq-header">
-        <h2>16-Step Sequencer</h2>
+        <h2>Step Sequencer</h2>
         <div class="seq-transport">
           <button id="seqPlayBtn">▶ Play</button>
-          <button id="seqClearBtn">Clear</button>
-          <label class="bpm-label">BPM
+          <label class="inline-label">BPM
             <input type="number" id="bpm" min="60" max="200" value="120">
+          </label>
+          <label class="inline-label">Swing <span class="val" id="swingVal">0%</span>
+            <input type="range" id="swing" min="0" max="0.5" step="0.01" value="0">
+          </label>
+          <label class="inline-label">Length
+            <select id="seqLength">
+              <option value="8">8</option>
+              <option value="12">12</option>
+              <option value="16" selected>16</option>
+            </select>
+          </label>
+          <label class="inline-label">Gate <span class="val" id="seqGateVal">85%</span>
+            <input type="range" id="seqGate" min="0.1" max="1" step="0.01" value="0.85">
           </label>
         </div>
       </div>
-      <div class="seq-grid" id="seqGrid"></div>
+
+      <div class="seq-tools">
+        <div class="tool-group">
+          <span class="tool-label">Scale</span>
+          <select id="seqRoot" aria-label="Root note"></select>
+          <select id="seqScale" aria-label="Scale"></select>
+        </div>
+        <div class="tool-group segmented" id="brushGroup" role="radiogroup" aria-label="Brush">
+          <span class="tool-label">Brush</span>
+          <button data-brush="note" class="active">● Note</button>
+          <button data-brush="accent">◆ Accent</button>
+          <button data-brush="erase">✕ Erase</button>
+        </div>
+        <div class="tool-group">
+          <button id="seqShiftLeft" title="Shift pattern left">◀</button>
+          <button id="seqShiftRight" title="Shift pattern right">▶</button>
+          <button id="seqRandomBtn">🎲 Random</button>
+          <button id="seqClearBtn">Clear</button>
+        </div>
+        <div class="tool-group">
+          <span class="tool-label">Pattern</span>
+          <div class="slots" id="slotButtons"></div>
+          <button id="chainBtn" class="toggle" title="Play patterns A→D in a row">Chain Off</button>
+        </div>
+      </div>
+
+      <div class="seq-wrap">
+        <div class="seq-labels" id="seqLabels"></div>
+        <div class="seq-grid" id="seqGrid"></div>
+      </div>
+      <p class="hint">Click or drag to paint notes. Accents play louder. The kick row drives the sidechain. Press <code>Space</code> to play or stop.</p>
+
       <div class="export-row">
-        <label class="loops-label">Loops
+        <label class="inline-label">Loops
           <select id="loops">
             <option value="1">1</option>
-            <option value="2">2</option>
+            <option value="2" selected>2</option>
             <option value="4">4</option>
           </select>
         </label>
@@ -126,7 +323,7 @@
         <button id="octaveUp">Octave +</button>
       </div>
       <div id="keyboard" class="keyboard"></div>
-      <p class="hint">Play with your computer keyboard: <code>A W S E D F T G Y H U J K O L P</code> — or connect a MIDI device above.</p>
+      <p class="hint">Play with your computer keyboard: <code>A W S E D F T G Y H U J K O L P</code>, <code>Z</code>/<code>X</code> change octave, <code>Space</code> plays the sequencer. Or connect a MIDI keyboard above.</p>
     </footer>
   </div>
 
@@ -140,17 +337,21 @@
       <section>
         <h3>Signal Flow</h3>
         <div class="signal-flow">
-          <div class="flow-node">Oscillator</div>
+          <div class="flow-node">Oscillators ×unison</div>
           <div class="flow-arrow">→</div>
-          <div class="flow-node">ADSR Gain</div>
+          <div class="flow-node">Filter + envelope</div>
           <div class="flow-arrow">→</div>
-          <div class="flow-node">Lowpass Filter</div>
+          <div class="flow-node">Amp envelope</div>
           <div class="flow-arrow">→</div>
-          <div class="flow-node">Delay Bus</div>
+          <div class="flow-node">Tremolo (LFO)</div>
           <div class="flow-arrow">→</div>
-          <div class="flow-node">Analyser</div>
+          <div class="flow-node">Drive</div>
           <div class="flow-arrow">→</div>
-          <div class="flow-node accent">Master Out</div>
+          <div class="flow-node">Dry + Delay + Reverb</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node">Sidechain duck</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-node accent">Master (+ drums)</div>
         </div>
       </section>
       <section>
@@ -160,12 +361,12 @@
           <div><dt>Sample Rate</dt><dd id="metricSampleRate">—</dd></div>
           <div><dt>Active Voices</dt><dd id="metricVoices">—</dd></div>
           <div><dt>Output Latency</dt><dd id="metricLatency">—</dd></div>
-          <div><dt>Scope Refresh</dt><dd>60fps (requestAnimationFrame)</dd></div>
+          <div><dt>Visuals</dt><dd>60fps (requestAnimationFrame)</dd></div>
         </dl>
       </section>
       <section>
         <h3>Source</h3>
-        <p class="hint">Built with vanilla HTML/CSS/JS on the Web Audio &amp; Web MIDI APIs — no frameworks, no build step.</p>
+        <p class="hint">Built with vanilla HTML/CSS/JS on the Web Audio &amp; Web MIDI APIs: no frameworks, no build step.</p>
         <a id="githubLink" href="#" target="_blank" rel="noopener" class="github-link">View source on GitHub →</a>
       </section>
     </div>
