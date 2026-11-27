@@ -12,6 +12,26 @@ export let presetName = "PLUCK";
 
 export let ctx, chain, analyser, freqData;
 
+// live controls (the VR mixer): a preset sets the starting point, the faders change it
+export const live = { cutoff: 900, q: 3, drive: 0.1, delay: 0.3, verb: 0.25, oct: 0, vol: 0.5, bpm: 120 };
+export function setParam(name, value) {
+  live[name] = value;
+  if (!chain) return;
+  const t = ctx.currentTime;
+  if (name === "drive") chain.shaper.curve = driveCurve(value);
+  if (name === "delay") chain.delayWet.gain.setTargetAtTime(value, t, 0.03);
+  if (name === "verb") chain.verbWet.gain.setTargetAtTime(value, t, 0.03);
+  if (name === "vol") chain.master.gain.setTargetAtTime(value, t, 0.03);
+  if (name === "cutoff" || name === "q") {
+    for (const v of held.values()) {
+      const f = v.filter.frequency;
+      if (name === "q") { v.filter.Q.setTargetAtTime(value, t, 0.03); continue; }
+      f.cancelScheduledValues(t);
+      f.setTargetAtTime(value, t, 0.03);
+    }
+  }
+}
+
 export function driveCurve(amount) {
   const n = 1024, c = new Float32Array(n), k = amount * 60;
   for (let i = 0; i < n; i++) {
@@ -61,10 +81,12 @@ export function ensureAudio() {
 export function applyPreset(name) {
   presetName = name;
   preset = PRESETS[name];
+  for (const k of ["cutoff", "q", "drive", "delay", "verb"]) live[k] = preset[k];
   if (!chain) return;
-  chain.shaper.curve = driveCurve(preset.drive);
-  chain.delayWet.gain.value = preset.delay;
-  chain.verbWet.gain.value = preset.verb;
+  chain.shaper.curve = driveCurve(live.drive);
+  chain.delayWet.gain.value = live.delay;
+  chain.verbWet.gain.value = live.verb;
+  chain.master.gain.value = live.vol;
 }
 
 export const midiToFreq = (n) => 440 * Math.pow(2, (n - 69) / 12);
@@ -77,14 +99,14 @@ export class Voice {
     this.mix = ctx.createGain();
     this.mix.gain.value = 1 / Math.sqrt(n);
     this.filter = ctx.createBiquadFilter();
-    this.filter.Q.value = p.q;
+    this.filter.Q.value = live.q;
     this.amp = ctx.createGain();
     this.amp.gain.value = 0;
     for (let i = 0; i < n; i++) {
       const spread = n === 1 ? 0 : (i / (n - 1)) * 2 - 1;
       const o = ctx.createOscillator();
       o.type = p.wave;
-      o.frequency.value = midiToFreq(note + 12 * p.oct);
+      o.frequency.value = midiToFreq(note + 12 * (p.oct + live.oct));
       o.detune.value = spread * p.detune;
       o.connect(this.mix);
       o.start(t);
@@ -95,9 +117,10 @@ export class Voice {
     this.amp.gain.setValueAtTime(0, t);
     this.amp.gain.linearRampToValueAtTime(velocity, t + p.a + 0.001);
     this.amp.gain.linearRampToValueAtTime(this.level, t + p.a + p.d + 0.002);
-    this.filter.frequency.setValueAtTime(p.cutoff, t);
-    this.filter.frequency.linearRampToValueAtTime(Math.min(18000, p.cutoff + p.env), t + p.a + 0.001);
-    this.filter.frequency.linearRampToValueAtTime(p.cutoff, t + p.a + p.d + 0.002);
+    const cut = live.cutoff;
+    this.filter.frequency.setValueAtTime(cut, t);
+    this.filter.frequency.linearRampToValueAtTime(Math.min(18000, cut + p.env), t + p.a + 0.001);
+    this.filter.frequency.linearRampToValueAtTime(cut, t + p.a + p.d + 0.002);
   }
   release() {
     const t = ctx.currentTime, gain = this.amp.gain;
@@ -158,7 +181,7 @@ function drum(type, t) {
 }
 export let kickFlash = -1;
 function beatScheduler() {
-  const sixteenth = 60 / 120 / 4;
+  const sixteenth = 60 / live.bpm / 4;
   while (nextBeat < ctx.currentTime + 0.1) {
     if (step % 4 === 0) drum("kick", nextBeat);
     if (step % 8 === 4) drum("snare", nextBeat);

@@ -3,7 +3,7 @@ import * as THREE from "./vendor/three.module.min.js";
 
 const PINK = 0xff2e88, LIME = 0xc6ff00, CYAN = 0x2ef2ff, INK = 0xf3f0e8;
 
-import { PRESETS, ctx, analyser, freqData, presetName, ensureAudio, applyPreset, noteOn, noteOff, held, beatOn, kickFlash, toggleBeat } from "./xr-audio.js";
+import { PRESETS, ctx, analyser, freqData, presetName, ensureAudio, applyPreset, noteOn, noteOff, held, beatOn, kickFlash, toggleBeat, live, setParam } from "./xr-audio.js";
 
 // ---------------------------------------------------------------- scene
 
@@ -19,7 +19,7 @@ scene.background = new THREE.Color(0x0c0c0f);
 scene.fog = new THREE.Fog(0x0c0c0f, 4, 12);
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 50);
 camera.position.set(0, 1.5, 0.35);
-camera.lookAt(0, 1.15, -0.7);
+camera.lookAt(0, 1.32, -0.7);
 
 scene.add(new THREE.HemisphereLight(0xffffff, 0x220011, 1.2));
 const grid = new THREE.GridHelper(20, 40, PINK, 0x2a1020);
@@ -42,7 +42,7 @@ function label(text, w = 256, h = 64, color = "#000", bg = null, font = "Anton")
 // title sign
 const title = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.225),
   new THREE.MeshBasicMaterial({ map: label("RIOT//BOX XR", 1024, 256, "#f3f0e8"), transparent: true }));
-title.position.set(0, 1.78, -1.0);
+title.position.set(0, 1.9, -1.05);
 scene.add(title);
 
 // pads: two rows, C minor over two octaves
@@ -60,9 +60,9 @@ for (let row = 0; row < 2; row++) {
     const r = 0.75;
     pad.position.set(Math.sin(angle) * r, 1.05 + row * 0.13, -Math.cos(angle) * r);
     pad.lookAt(0, pad.position.y, 0);
-    const txt = new THREE.Mesh(new THREE.PlaneGeometry(0.08, 0.02),
-      new THREE.MeshBasicMaterial({ map: label(NOTE_NAMES[note % 12] + (Math.floor(note / 12) - 1), 256, 64, "#f3f0e8", null, "JetBrains Mono"), transparent: true }));
-    txt.position.set(0, -0.032, 0.0155);
+    const txt = new THREE.Mesh(new THREE.PlaneGeometry(0.085, 0.04),
+      new THREE.MeshBasicMaterial({ map: label(NOTE_NAMES[note % 12] + (Math.floor(note / 12) - 1), 256, 120, "#f3f0e8", null, "Anton"), transparent: true }));
+    txt.position.set(0, 0, 0.0155);
     pad.add(txt);
     pad.userData = { kind: "pad", note, glow: 0, base: 0.15 };
     scene.add(pad);
@@ -98,8 +98,84 @@ refreshButtons();
 function pressButton(b) {
   ensureAudio();
   if (b.userData.name === "BEAT") toggleBeat();
-  else applyPreset(b.userData.name);
+  else { applyPreset(b.userData.name); refreshFaders(); }
   refreshButtons();
+}
+
+// mixer: 8 vertical faders above the pads (touch with a fingertip, or point + hold the trigger and slide)
+const fmtHz = (v) => (v >= 1000 ? (v / 1000).toFixed(1) + "k" : Math.round(v) + "");
+const FADERS = [
+  { key: "cutoff", name: "CUTOFF", to: (u) => 80 * Math.pow(2, u * 7.8), from: (v) => Math.log2(v / 80) / 7.8, fmt: fmtHz },
+  { key: "q", name: "RES", to: (u) => 0.5 + u * 17.5, from: (v) => (v - 0.5) / 17.5, fmt: (v) => v.toFixed(1) },
+  { key: "drive", name: "DRIVE", to: (u) => u, from: (v) => v, fmt: (v) => Math.round(v * 100) + "%" },
+  { key: "delay", name: "DELAY", to: (u) => u * 0.7, from: (v) => v / 0.7, fmt: (v) => Math.round((v / 0.7) * 100) + "%" },
+  { key: "verb", name: "REVERB", to: (u) => u * 0.9, from: (v) => v / 0.9, fmt: (v) => Math.round((v / 0.9) * 100) + "%" },
+  { key: "oct", name: "OCTAVE", to: (u) => Math.round(u * 4) - 2, from: (v) => (v + 2) / 4, fmt: (v) => (v > 0 ? "+" : "") + v },
+  { key: "bpm", name: "BPM", to: (u) => Math.round(70 + u * 100), from: (v) => (v - 70) / 100, fmt: (v) => "" + v },
+  { key: "vol", name: "VOLUME", to: (u) => u, from: (v) => v, fmt: (v) => Math.round(v * 100) + "%" },
+];
+const FADER_H = 0.16, FADER_Y = 1.43;
+const faders = [];
+function faderLabel(f, value) {
+  const c = document.createElement("canvas");
+  c.width = 256; c.height = 128;
+  const g = c.getContext("2d");
+  g.fillStyle = "#f3f0e8"; g.textAlign = "center"; g.textBaseline = "middle";
+  g.font = "56px Anton, Impact, sans-serif"; g.fillText(f.name, 128, 40);
+  g.fillStyle = "#c6ff00"; g.font = "bold 44px 'JetBrains Mono', monospace"; g.fillText(f.fmt(value), 128, 98);
+  return c;
+}
+FADERS.forEach((f, i) => {
+  const angle = (i - 3.5) * 0.115, r = 0.8;
+  const group = new THREE.Group();
+  group.position.set(Math.sin(angle) * r, FADER_Y, -Math.cos(angle) * r);
+  group.lookAt(0, FADER_Y, 0);
+  const track = new THREE.Mesh(new THREE.BoxGeometry(0.012, FADER_H, 0.008), new THREE.MeshBasicMaterial({ color: 0x2a2a33 }));
+  group.add(track);
+  const fillGeo = new THREE.BoxGeometry(0.014, 1, 0.01); fillGeo.translate(0, 0.5, 0);
+  const fill = new THREE.Mesh(fillGeo, new THREE.MeshBasicMaterial({ color: LIME }));
+  fill.position.y = -FADER_H / 2;
+  group.add(fill);
+  const knob = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.018, 0.022), new THREE.MeshStandardMaterial({ color: PINK, emissive: PINK, emissiveIntensity: 0.5 }));
+  group.add(knob);
+  const canvas = faderLabel(f, live[f.key]);
+  const tex = new THREE.CanvasTexture(canvas); tex.colorSpace = THREE.SRGBColorSpace;
+  const tag = new THREE.Mesh(new THREE.PlaneGeometry(0.085, 0.0425), new THREE.MeshBasicMaterial({ map: tex, transparent: true }));
+  tag.position.y = FADER_H / 2 + 0.035;
+  group.add(tag);
+  // invisible, wider hit area so the fader is easy to grab
+  const hit = new THREE.Mesh(new THREE.BoxGeometry(0.07, FADER_H + 0.03, 0.03), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
+  hit.userData = { kind: "fader", index: i };
+  group.add(hit);
+  scene.add(group);
+  interactive.push(hit);
+  faders.push({ f, group, fill, knob, tex, canvas, hit, u: 0, shown: null });
+});
+function drawFader(fd) {
+  const v = live[fd.f.key];
+  fd.u = Math.min(1, Math.max(0, fd.f.from(v)));
+  fd.fill.scale.y = Math.max(0.001, fd.u * FADER_H);
+  fd.knob.position.y = -FADER_H / 2 + fd.u * FADER_H;
+  const txt = fd.f.fmt(v);
+  if (txt !== fd.shown) {
+    fd.shown = txt;
+    const c = faderLabel(fd.f, v);
+    fd.canvas.getContext("2d").clearRect(0, 0, 256, 128);
+    fd.canvas.getContext("2d").drawImage(c, 0, 0);
+    fd.tex.needsUpdate = true;
+  }
+}
+function refreshFaders() { faders.forEach(drawFader); }
+refreshFaders();
+// u = 0..1 from a world point on the fader
+const faderLocal = new THREE.Vector3();
+function setFaderFromWorld(fd, worldPoint) {
+  faderLocal.copy(worldPoint);
+  fd.group.worldToLocal(faderLocal);
+  const u = Math.min(1, Math.max(0, (faderLocal.y + FADER_H / 2) / FADER_H));
+  ensureAudio();
+  setParam(fd.f.key, fd.f.to(u));
+  drawFader(fd);
 }
 
 // spectrum ring around the player
@@ -111,7 +187,8 @@ for (let i = 0; i < BARS; i++) {
   const t = i / BARS, a = t * Math.PI * 2;
   const mat = new THREE.MeshBasicMaterial({ color: new THREE.Color().lerpColors(new THREE.Color(PINK), new THREE.Color(LIME), Math.abs(t - 0.5) * 2) });
   const bar = new THREE.Mesh(barGeo, mat);
-  bar.position.set(Math.sin(a) * 1.8, 0, Math.cos(a) * 1.8);
+  bar.position.set(Math.sin(a) * 2.6, 0, Math.cos(a) * 2.6);
+  bar.userData.maxH = Math.cos(a) < -0.5 ? 0.55 : 1.6; // the front arc stays below the pads
   bar.scale.y = 0.02;
   scene.add(bar);
   bars.push(bar);
@@ -131,15 +208,19 @@ function hitTest(origin, direction) {
 function triggerObject(obj, key, velocity) {
   if (!obj) return;
   if (obj.userData.kind === "pad") { noteOn(key, obj.userData.note, velocity); obj.userData.glow = 1; obj.userData.heldBy = key; }
+  else if (obj.userData.kind === "fader") dragging.set(key, faders[obj.userData.index]);
   else pressButton(obj);
 }
+const dragging = new Map(); // pointer key -> fader being dragged
 function releaseKey(key) {
   noteOff(key);
+  dragging.delete(key);
   pads.forEach((p) => { if (p.userData.heldBy === key) p.userData.heldBy = null; });
 }
 
 // controllers / pinch: point and pull the trigger (a hand pinch fires the same events)
 const touchers = []; // grips + hands, used for touch-to-play
+const controllers = [];
 for (let i = 0; i < 2; i++) {
   const c = renderer.xr.getController(i);
   const rayGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, -1)]);
@@ -154,6 +235,7 @@ for (let i = 0; i < 2; i++) {
   });
   c.addEventListener("selectend", () => releaseKey("ctrl" + i));
   scene.add(c);
+  controllers.push(c);
   const grip = renderer.xr.getControllerGrip(i);
   grip.add(new THREE.Mesh(new THREE.SphereGeometry(0.02, 12, 12), new THREE.MeshBasicMaterial({ color: i ? PINK : LIME })));
   scene.add(grip);
@@ -176,10 +258,33 @@ function touchPoint(obj) {
   if (!obj.visible) return null;
   return obj.getWorldPosition(tipPos);
 }
+const dragPlane = new THREE.Plane(), planeHit = new THREE.Vector3(), planeNormal = new THREE.Vector3();
+function updateDrags() {
+  controllers.forEach((c, i) => {
+    const fd = dragging.get("ctrl" + i);
+    if (!fd) return;
+    tmpMatrix.identity().extractRotation(c.matrixWorld);
+    const origin = new THREE.Vector3().setFromMatrixPosition(c.matrixWorld);
+    const dir = new THREE.Vector3(0, 0, -1).applyMatrix4(tmpMatrix);
+    fd.group.getWorldDirection(planeNormal);
+    dragPlane.setFromNormalAndCoplanarPoint(planeNormal, fd.group.getWorldPosition(new THREE.Vector3()));
+    raycaster.set(origin, dir);
+    if (raycaster.ray.intersectPlane(dragPlane, planeHit)) setFaderFromWorld(fd, planeHit);
+  });
+}
+function updateFaderTouch(p) {
+  for (const fd of faders) {
+    local.copy(p);
+    fd.group.worldToLocal(local);
+    if (Math.abs(local.x) < 0.035 && Math.abs(local.y) < FADER_H / 2 + 0.02 && local.z < 0.03 && local.z > -0.05) { setFaderFromWorld(fd, p); return; }
+  }
+}
 function updateTouch() {
+  updateDrags();
   for (const t of touchers) {
     const key = t.userData.touchKey;
     const p = touchPoint(t);
+    if (p) updateFaderTouch(p.clone());
     let hitPad = null;
     if (p) {
       for (const pad of pads) {
@@ -204,6 +309,15 @@ renderer.domElement.addEventListener("pointerdown", (e) => {
   raycaster.setFromCamera(mouse, camera);
   const hits = raycaster.intersectObjects(interactive, false);
   triggerObject(hits.length ? hits[0].object : null, "mouse", 0.85);
+});
+renderer.domElement.addEventListener("pointermove", (e) => {
+  const fd = dragging.get("mouse");
+  if (!fd) return;
+  mouse.set((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
+  raycaster.setFromCamera(mouse, camera);
+  fd.group.getWorldDirection(planeNormal);
+  dragPlane.setFromNormalAndCoplanarPoint(planeNormal, fd.group.getWorldPosition(new THREE.Vector3()));
+  if (raycaster.ray.intersectPlane(dragPlane, planeHit)) setFaderFromWorld(fd, planeHit);
 });
 window.addEventListener("pointerup", () => releaseKey("mouse"));
 const KEYS = "asdfghjkqwertyui";
@@ -250,7 +364,7 @@ renderer.setAnimationLoop(() => {
       const half = i < BARS / 2 ? i : BARS - 1 - i;
       const hz = 40 * Math.pow(12000 / 40, half / (BARS / 2));
       const v = freqData[Math.min(freqData.length - 1, Math.floor((hz / nyq) * freqData.length))] / 255;
-      bars[i].scale.y += (0.02 + v * 1.6 - bars[i].scale.y) * 0.35;
+      bars[i].scale.y += (0.02 + v * bars[i].userData.maxH - bars[i].scale.y) * 0.35;
     }
     const pulse = kickFlash > 0 ? Math.max(0, 1 - (ctx.currentTime - kickFlash) / 0.3) : 0;
     title.scale.setScalar(1 + pulse * 0.06);
@@ -265,4 +379,4 @@ window.addEventListener("resize", () => {
 });
 
 // tiny hook for automated tests
-window.__riotXR = { pads, buttons, triggerObject, releaseKey, held, get ctx() { return ctx; }, get analyser() { return analyser; } };
+window.__riotXR = { pads, buttons, faders, live, setFaderFromWorld, camera, triggerObject, releaseKey, held, get ctx() { return ctx; }, get analyser() { return analyser; } };
