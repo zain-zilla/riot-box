@@ -73,12 +73,13 @@ for (let row = 0; row < 2; row++) {
 
 // buttons: presets + beat
 const buttons = [];
-const btnNames = ["FAT BASS", "PLUCK", "PAD", "LEAD", "BEAT"];
+const btnNames = ["FAT BASS", "PLUCK", "PAD", "LEAD", "BEAT", "LATCH"];
+const BTN_BG = { BEAT: "#2ef2ff", LATCH: "#ff2e88" };
+let latchOn = false;
 btnNames.forEach((name, i) => {
-  const isBeat = name === "BEAT";
-  const mat = new THREE.MeshBasicMaterial({ map: label(name, 256, 64, "#000", isBeat ? "#2ef2ff" : "#c6ff00") });
+  const mat = new THREE.MeshBasicMaterial({ map: label(name, 256, 64, "#000", BTN_BG[name] || "#c6ff00") });
   const b = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.04, 0.02), [null, null, null, null, mat, null].map((m) => m || new THREE.MeshBasicMaterial({ color: 0x111111 })));
-  const angle = (i - 2) * 0.24;
+  const angle = (i - 2.5) * 0.22;
   b.position.set(Math.sin(angle) * 0.7, 0.9, -Math.cos(angle) * 0.7);
   b.lookAt(0, b.position.y, 0);
   b.userData = { kind: "button", name, active: name === presetName };
@@ -88,7 +89,8 @@ btnNames.forEach((name, i) => {
 });
 function refreshButtons() {
   buttons.forEach((b) => {
-    const on = b.userData.name === "BEAT" ? beatOn : b.userData.name === presetName;
+    const n = b.userData.name;
+    const on = n === "BEAT" ? beatOn : n === "LATCH" ? latchOn : n === presetName;
     b.scale.setScalar(on ? 1.12 : 1);
     b.position.z = -Math.cos(Math.atan2(b.position.x, -b.position.z)) * (on ? 0.68 : 0.7);
   });
@@ -98,6 +100,10 @@ refreshButtons();
 function pressButton(b) {
   ensureAudio();
   if (b.userData.name === "BEAT") toggleBeat();
+  else if (b.userData.name === "LATCH") {
+    latchOn = !latchOn;
+    if (!latchOn) pads.forEach((p) => { if (p.userData.heldBy && p.userData.heldBy.startsWith("latch")) releaseKey(p.userData.heldBy); });
+  }
   else { applyPreset(b.userData.name); refreshFaders(); }
   refreshButtons();
 }
@@ -207,7 +213,12 @@ function hitTest(origin, direction) {
 
 function triggerObject(obj, key, velocity) {
   if (!obj) return;
-  if (obj.userData.kind === "pad") { noteOn(key, obj.userData.note, velocity); obj.userData.glow = 1; obj.userData.heldBy = key; }
+  if (obj.userData.kind === "pad" && latchOn) {
+    const lk = "latch" + obj.userData.note;
+    if (held.has(lk)) releaseKey(lk);
+    else { noteOn(lk, obj.userData.note, velocity); obj.userData.glow = 1; obj.userData.heldBy = lk; }
+  }
+  else if (obj.userData.kind === "pad") { noteOn(key, obj.userData.note, velocity); obj.userData.glow = 1; obj.userData.heldBy = key; }
   else if (obj.userData.kind === "fader") dragging.set(key, faders[obj.userData.index]);
   else pressButton(obj);
 }
@@ -364,7 +375,7 @@ if (DEBUG) {
 const NAMES = { hand0: "L finger", hand1: "R finger", grip0: "L grip", grip1: "R grip", ctrl0: "L pinch/trigger", ctrl1: "R pinch/trigger", mouse: "mouse" };
 function updateDebug() {
   const parts = [];
-  for (const p of pads) if (p.userData.heldBy) parts.push(NOTE_NAMES[p.userData.note % 12] + (Math.floor(p.userData.note / 12) - 1) + " ← " + (NAMES[p.userData.heldBy] || p.userData.heldBy));
+  for (const p of pads) if (p.userData.heldBy) parts.push(NOTE_NAMES[p.userData.note % 12] + (Math.floor(p.userData.note / 12) - 1) + " ← " + (NAMES[p.userData.heldBy] || (p.userData.heldBy.startsWith("latch") ? "latched" : p.userData.heldBy)));
   const text = parts.length ? parts.join("   ") : "no pads held";
   if (text === debugText) return;
   debugText = text;
@@ -426,4 +437,4 @@ window.addEventListener("resize", () => {
 });
 
 // tiny hook for automated tests
-window.__riotXR = { pads, buttons, faders, live, setFaderFromWorld, camera, touchers, touchPoint, get debugText() { return debugText; }, triggerObject, releaseKey, held, get ctx() { return ctx; }, get analyser() { return analyser; } };
+window.__riotXR = { get latchOn() { return latchOn; }, pads, buttons, faders, live, setFaderFromWorld, camera, touchers, touchPoint, get debugText() { return debugText; }, triggerObject, releaseKey, held, get ctx() { return ctx; }, get analyser() { return analyser; } };

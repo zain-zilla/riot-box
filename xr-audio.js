@@ -1,5 +1,5 @@
 // RIOT//BOX shared XR audio engine: synth voices, effects, drums + sidechain, analyser.
-// Used by xr.html (pads) and gesture.html (Gesture Synth).
+// Used by xr.html (pads) and gesture.html (AIR//RIOT).
 
 export const PRESETS = {
   "FAT BASS": { wave: "sawtooth", unison: 3, detune: 14, a: 0.005, d: 0.25, s: 0.6, r: 0.15, cutoff: 600, q: 6, env: 1800, drive: 0.35, delay: 0.05, verb: 0.08, oct: -1 },

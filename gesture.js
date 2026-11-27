@@ -1,4 +1,4 @@
-// Gesture Synth: play RIOT//BOX with bare hands (WebXR hand tracking). Gestures are recognised
+// AIR//RIOT (formerly Gesture Synth): play RIOT//BOX with bare hands (WebXR hand tracking). Gestures are recognised
 // on the headset from joint positions (simple geometry), so no camera data leaves the device.
 import * as THREE from "./vendor/three.module.min.js";
 import { ctx, chain, analyser, freqData, ensureAudio, toggleBeat, beatOn, kickFlash, midiToFreq } from "./xr-audio.js";
@@ -149,7 +149,7 @@ function textPlane(text, w, h, worldW, color = "#f3f0e8", font = "Anton") {
   return new THREE.Mesh(new THREE.PlaneGeometry(worldW, worldW * (h / w)), new THREE.MeshBasicMaterial({ map: tex, transparent: true }));
 }
 
-const title = textPlane("GESTURE SYNTH", 1024, 160, 0.9);
+const title = textPlane("AIR//RIOT", 1024, 160, 0.9);
 title.position.set(0, 1.95, -1.1);
 scene.add(title);
 
