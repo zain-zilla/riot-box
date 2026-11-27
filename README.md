@@ -1,4 +1,4 @@
-# ⚡ ANOMALY: a browser synth
+# ⚡ RIOT//BOX: a browser synth
 
 **A polyphonic synthesizer that runs entirely in the browser: unison, LFO, drive, delay, reverb, sidechain, an arpeggiator, a step sequencer with drums, real MIDI hardware support, live visuals for every effect, and a WAV export engine written from scratch on the Web Audio API. No build step, no dependencies.**
 
