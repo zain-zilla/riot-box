@@ -240,6 +240,9 @@ for (let i = 0; i < 2; i++) {
   grip.add(new THREE.Mesh(new THREE.SphereGeometry(0.02, 12, 12), new THREE.MeshBasicMaterial({ color: i ? PINK : LIME })));
   scene.add(grip);
   grip.userData.touchKey = "grip" + i;
+  // with hand tracking the grip sits at the palm: only fingertips should play, so ignore it
+  grip.addEventListener("connected", (e) => { grip.userData.isHand = !!(e.data && e.data.hand); });
+  grip.addEventListener("disconnected", () => { grip.userData.isHand = false; });
   const hand = renderer.xr.getHand(i);
   scene.add(hand);
   hand.userData.touchKey = "hand" + i;
@@ -255,7 +258,7 @@ function touchPoint(obj) {
     if (!j.visible) return null;
     return j.getWorldPosition(tipPos);
   }
-  if (!obj.visible) return null;
+  if (!obj.visible || obj.userData.isHand) return null;
   return obj.getWorldPosition(tipPos);
 }
 const dragPlane = new THREE.Plane(), planeHit = new THREE.Vector3(), planeNormal = new THREE.Vector3();
@@ -351,6 +354,7 @@ setupVRButton();
 renderer.setAnimationLoop(() => {
   if (renderer.xr.isPresenting) updateTouch();
   for (const p of pads) {
+    if (p.userData.heldBy && !held.has(p.userData.heldBy)) p.userData.heldBy = null;
     const target = p.userData.heldBy ? 1 : 0;
     p.userData.glow += (target - p.userData.glow) * 0.25;
     p.material.emissiveIntensity = p.userData.base + p.userData.glow * 2.2;
@@ -379,4 +383,4 @@ window.addEventListener("resize", () => {
 });
 
 // tiny hook for automated tests
-window.__riotXR = { pads, buttons, faders, live, setFaderFromWorld, camera, triggerObject, releaseKey, held, get ctx() { return ctx; }, get analyser() { return analyser; } };
+window.__riotXR = { pads, buttons, faders, live, setFaderFromWorld, camera, touchers, touchPoint, triggerObject, releaseKey, held, get ctx() { return ctx; }, get analyser() { return analyser; } };
