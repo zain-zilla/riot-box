@@ -3,7 +3,7 @@ import * as THREE from "./vendor/three.module.min.js";
 
 const PINK = 0xff2e88, LIME = 0xc6ff00, CYAN = 0x2ef2ff, INK = 0xf3f0e8;
 
-import { PRESETS, ctx, analyser, freqData, presetName, ensureAudio, applyPreset, noteOn, noteOff, held, beatOn, kickFlash, toggleBeat, live, setParam } from "./xr-audio.js";
+import { PRESETS, ctx, analyser, freqData, presetName, ensureAudio, applyPreset, noteOn, noteOff, held, beatOn, kickFlash, toggleBeat, live, setParam } from "./xr-audio.js?v=8";
 
 // ---------------------------------------------------------------- scene
 

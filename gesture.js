@@ -1,7 +1,7 @@
 // AIR//RIOT (formerly Gesture Synth): play RIOT//BOX with bare hands (WebXR hand tracking). Gestures are recognised
 // on the headset from joint positions (simple geometry), so no camera data leaves the device.
 import * as THREE from "./vendor/three.module.min.js";
-import { ctx, chain, analyser, freqData, ensureAudio, toggleBeat, beatOn, kickFlash, midiToFreq } from "./xr-audio.js";
+import { ctx, chain, analyser, freqData, ensureAudio, toggleBeat, beatOn, kickFlash, midiToFreq } from "./xr-audio.js?v=8";
 
 const PINK = 0xff2e88, LIME = 0xc6ff00, CYAN = 0x2ef2ff;
 
